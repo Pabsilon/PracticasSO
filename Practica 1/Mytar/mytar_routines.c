@@ -26,7 +26,7 @@ copynFile(FILE * origin, FILE * destination, int nBytes)
     }
     if (copiedChars != nBytes){
     	return (-1);
-    }
+    }else
     return (copiedChars);
 }
 
@@ -44,11 +44,18 @@ copynFile(FILE * origin, FILE * destination, int nBytes)
  * 
  * Returns: 0 if success, -1 if error
  */
-int
-loadstr(FILE * file, char **buf)
-{
-	// Complete the function
-	return -1;
+
+int loadstr(FILE *file, char **buf){
+    char charBuf;
+    char* name;
+    name = (char*) malloc (sizeof (char) * 50);
+    fread(&charBuf, sizeof(char), 1, file);
+    while(charBuf!='\0'){
+        strncat(name, &charBuf,1);
+        fread(&charBuf, sizeof(char), 1, file);
+    }
+    **buf = *name;
+    return 0;
 }
 
 /** Read tarball header and store it in memory.
@@ -65,8 +72,25 @@ loadstr(FILE * file, char **buf)
 int
 readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 {
-	// Complete the function
-	return EXIT_FAILURE;
+	int i;
+    char **buf;
+    stHeaderEntry* p;
+    fread(&nFiles,sizeof(int),1,tarFile);
+
+    //Memory reservation for the header entry.
+    //Total size is nFiles times stHeaderEntry type size.
+    if(!(p = malloc(sizeof (stHeaderEntry) * (*nFiles)))){
+        fclose(tarFile);
+        return(EXIT_FAILURE);
+    }
+	
+    for (i = 0; i< *nFiles; i++){
+        loadstr(tarFile, **buf);
+        p[i].name=**buf;
+        fread(&p[i].size,sizeof(unsigned int),1,tarFile);
+    }
+
+    return (EXIT_SUCCESS);
 }
 
 /** Creates a tarball archive 
