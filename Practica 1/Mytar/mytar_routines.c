@@ -17,8 +17,17 @@ extern char *use;
 int
 copynFile(FILE * origin, FILE * destination, int nBytes)
 {
-	// Complete the function
-	return -1;
+	int copiedChars = 0;
+    char c;
+    while (copiedChars < nBytes) {
+    	c= getc(origin); //gets the next char from the origin file
+        putc(c, destination); //puts that char in the destination file
+        copiedChars++;
+    }
+    if (copiedChars != nBytes){
+    	return (-1);
+    }
+    return (copiedChars);
 }
 
 /** Loads a string from a file.
