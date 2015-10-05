@@ -48,8 +48,10 @@ copynFile(FILE * origin, FILE * destination, int nBytes)
 int loadstr(FILE *file, char **buf){
     char charBuf;
     char* name;
+    //We alocate enough space for 50 chars
     name = (char*) malloc (sizeof (char) * 50);
     fread(&charBuf, sizeof(char), 1, file);
+    //We keep reading until we find the \0 flag
     while(charBuf!='\0'){
         strncat(name, &charBuf,1);
         fread(&charBuf, sizeof(char), 1, file);
@@ -117,8 +119,59 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 int
 createTar(int nFiles, char *fileNames[], char tarName[])
 {
-	// Complete the function
-	return EXIT_FAILURE;
+	FILE *tarFile, *inFile;
+    int headerSize = sizeof(int);
+    stHeaderEntry *header;
+
+    if (nFiles <=0){ //No files, no tar.
+	   return (EXIT_FAILURE);
+    }
+
+    if (!(tarFile = fopen(tarName, "w"))){
+        return (EXIT_FAILURE);
+    }
+
+    if (!(header = malloc(sizeof(stHeaderEntry)*nFiles))){
+        //If we can't allocate memory we fail.
+        fclose(tarFile);
+        remove(tarName);
+        return(EXIT_FAILURE);
+
+    int i = 0;
+    //We calculate how much memory we need for the header
+    for(; i<nFiles; i++){
+        headerSize += sizeof(unsigned int);
+        headerSize += sizeof(char)*((strlen(fileNames[i]))+1);
+    }
+
+    fseek(tarFile, headerSize, SEEK_SET); //Open the tarFile after the header
+    
+    i=0;
+    for (; i<nFiles; i++){
+        if ((inFile = fopen(fileNames[i], "r"))==NULL){
+            fclose(tarFile);
+            remove(tarName);
+            return(EXIT_FAILURE);
+        }
+        header[i].name = fileNames[i];
+        fseek(inFile, 0L, SEEK_SET);
+        header[i].size = ftell(inFile);
+        fseek(inFile, 0L, SEEK_SET);
+        copynFile(inFile,tarFile,header[i].size);
+    }
+
+    fseek(tarFile, 0L, SEEK_SET);
+    fwrite(&nFiles, sizeof(int), 1, tarFile);
+
+    i=0;
+    for(; i<nFiles; i++){
+        fwrite(header[i].name, strlen(fileNames[i])+1, 1, tarFile);
+        fwrite(&header[i].size, sizeof(unsigned int), 1, tarFile);
+    }
+    flcose(tarFile);
+    free(header);
+    return(EXIT_SUCCESS);
+    }
 }
 
 /** Extract files stored in a tarball archive
