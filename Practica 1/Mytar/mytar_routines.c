@@ -49,7 +49,7 @@ int loadstr(FILE *file, char **buf){
     char charBuf;
     char* name;
     //We alocate enough space for 50 chars
-    name = (char*) malloc (sizeof (char) * 50);
+    name = (char*) malloc (sizeof (char) * 100);
     fread(&charBuf, sizeof(char), 1, file);
     //We keep reading until we find the \0 flag
     while(charBuf!='\0'){
@@ -87,10 +87,12 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
     }
 	
     for (i = 0; i< *nFiles; i++){
-        loadstr(tarFile, **buf);
-        p[i].name=**buf;
+        loadstr(tarFile, buf);
+        p[i].name=*buf;
         fread(&p[i].size,sizeof(unsigned int),1,tarFile);
     }
+
+    *header = p;
 
     return (EXIT_SUCCESS);
 }
@@ -136,6 +138,7 @@ createTar(int nFiles, char *fileNames[], char tarName[])
         fclose(tarFile);
         remove(tarName);
         return(EXIT_FAILURE);
+    }
 
     int i = 0;
     //We calculate how much memory we need for the header
@@ -168,10 +171,9 @@ createTar(int nFiles, char *fileNames[], char tarName[])
         fwrite(header[i].name, strlen(fileNames[i])+1, 1, tarFile);
         fwrite(&header[i].size, sizeof(unsigned int), 1, tarFile);
     }
-    flcose(tarFile);
+    fclose(tarFile);
     free(header);
     return(EXIT_SUCCESS);
-    }
 }
 
 /** Extract files stored in a tarball archive
