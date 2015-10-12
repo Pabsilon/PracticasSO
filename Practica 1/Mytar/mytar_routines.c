@@ -17,16 +17,30 @@ extern char *use;
 int
 copynFile(FILE * origin, FILE * destination, int nBytes)
 {
-	int copiedChars = 0;
-    char c;
-    while (copiedChars < nBytes) {
+	int copiedChars = 0, isOk = TRUE; // Para la variable isOk 1: TRUE
+    char c, d;	
+    while (isOk && copiedChars < nBytes) {
     	c= getc(origin); //gets the next char from the origin file
-        putc(c, destination); //puts that char in the destination file
-        copiedChars++;
+		if(c == EOF) // In case of getc error
+		{			
+			isOk = FALSE;
+		}
+		else 
+		{
+			d = putc(c, destination); //puts that char in the destination file
+			if(d == EOF) // In case of putc error
+			{
+				isOk = FALSE;
+			}
+			else
+			{
+				copiedChars++;
+			}
+		}
     }
     if (copiedChars != nBytes){
     	return (-1);
-    }else
+    }
     return (copiedChars);
 }
 
@@ -48,15 +62,35 @@ copynFile(FILE * origin, FILE * destination, int nBytes)
 int loadstr(FILE *file, char **buf){
     char charBuf;
     char* name;
-    //We alocate enough space for 50 chars
-    name = (char*) malloc (sizeof (char) * 100);
-    fread(&charBuf, sizeof(char), 1, file);
+	int size = 50, readChars = 0;	
+    size_t numberChars; 
+	//We alocate enough space 
+    name = (char*) malloc (sizeof (char) * size);
+	*name = '\0';
+    numberChars = fread(&charBuf, sizeof(char), 1, file);
+	if(numberChars != 1)
+	{
+		// Error!!!!!!!!!
+	}	
     //We keep reading until we find the \0 flag
     while(charBuf!='\0'){
-        strncat(name, &charBuf,1);
-        fread(&charBuf, sizeof(char), 1, file);
+        strncat(name, &charBuf,1);		
+		readChars++;
+		// If there's not enough space
+		if(readChars >= size)
+		{
+			// We increase the buffer in 50 chars and we reallocate memory
+			size += 50;
+			name = (char*) realloc (name, size);
+		}
+        numberChars = fread(&charBuf, sizeof(char), 1, file);
+		if(numberChars != 1)
+		{
+			// Error!!!!!!!!!!!!!!!!!
+		}
     }
-    **buf = *name;
+	// SI HAY ERROR DEVOLVER -1!!!!
+    (*buf) = name;
     return 0;
 }
 
