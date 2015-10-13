@@ -17,20 +17,20 @@ extern char *use;
 int
 copynFile(FILE * origin, FILE * destination, int nBytes)
 {
-	int copiedChars = 0, isOk = TRUE; // Para la variable isOk 1: TRUE
+	int copiedChars = 0, isOk = 1; // Para la variable isOk 1: TRUE
     char c, d;	
-    while (isOk && copiedChars < nBytes) {
+    while ((isOk==1) && copiedChars < nBytes) {
     	c= getc(origin); //gets the next char from the origin file
 		if(c == EOF) // In case of getc error
 		{			
-			isOk = FALSE;
+			isOk = 0;
 		}
 		else 
 		{
 			d = putc(c, destination); //puts that char in the destination file
 			if(d == EOF) // In case of putc error
 			{
-				isOk = FALSE;
+				isOk = 0;
 			}
 			else
 			{
@@ -185,13 +185,13 @@ createTar(int nFiles, char *fileNames[], char tarName[])
     
     i=0;
     for (; i<nFiles; i++){
-        if ((inFile = fopen(fileNames[i], "r"))==NULL){
-            fclose(tarFile);
+        if ((inFile = fopen(fileNames[i], "r+"))==NULL){
+        	fclose(tarFile);
             remove(tarName);
             return(EXIT_FAILURE);
         }
         header[i].name = fileNames[i];
-        fseek(inFile, 0L, SEEK_SET);
+        fseek(inFile, 0L, SEEK_END);
         header[i].size = ftell(inFile);
         fseek(inFile, 0L, SEEK_SET);
         copynFile(inFile,tarFile,header[i].size);
