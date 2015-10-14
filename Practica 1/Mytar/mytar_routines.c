@@ -90,7 +90,8 @@ int loadstr(FILE *file, char **buf){
 		}
     }
 	// SI HAY ERROR DEVOLVER -1!!!!
-    (*buf) = name;
+	buf = (char *) malloc (sizeof (char) * size);
+    *buf = name;
     return 0;
 }
 
@@ -111,7 +112,7 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 	int i;
     char **buf;
     stHeaderEntry* p;
-    fread(&nFiles,sizeof(int),1,tarFile);
+    fread(nFiles,sizeof(int),1,tarFile);
 
     //Memory reservation for the header entry.
     //Total size is nFiles times stHeaderEntry type size.
@@ -122,7 +123,8 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 	
     for (i = 0; i< *nFiles; i++){
         loadstr(tarFile, buf);
-        p[i].name=*buf;
+        p[i].name = (char*) malloc(sizeof (char) * strlen(buf)+1);
+        p[i].name=&buf;
         fread(&p[i].size,sizeof(unsigned int),1,tarFile);
     }
 
