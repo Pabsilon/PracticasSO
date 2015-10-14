@@ -227,6 +227,25 @@ createTar(int nFiles, char *fileNames[], char tarName[])
 int
 extractTar(char tarName[])
 {
-	// Complete the function
-	return EXIT_FAILURE;
+	FILE *tarFile, *outFile;
+    int numFiles,i = 0;
+    stHeaderEntry *header;
+
+    if (!(tarFile = fopen(tarName, "r"))){
+        return (EXIT_FAILURE);
+    }
+
+    readHeader(tarFile, &header, &numFiles);
+
+    for (; i<numFiles; i++){
+        if (!(outFile = fopen(header[i].name, "w"))){
+            return (EXIT_FAILURE);
+        }
+        copynFile(tarFile, outFile, header[i].size);
+        fclose(outFile);
+
+    }
+    fclose(tarFile);
+    free(header);
+return (EXIT_SUCCESS);
 }
