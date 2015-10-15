@@ -4,8 +4,6 @@
 #include <unistd.h>
 #include "mytar.h"
 
-extern char *use;
-
 /** Copy nBytes bytes from the origin file to the destination file.
  *
  * origin: pointer to the FILE descriptor associated with the origin file
@@ -66,15 +64,15 @@ int loadstr(FILE *file, char **buf){
     size_t numberChars; 
 	//We alocate enough space 
     name = (char*) malloc (sizeof (char) * size);
-	*name = '\0';
     numberChars = fread(&charBuf, sizeof(char), 1, file);
 	if(numberChars != 1)
 	{
 		// Error!!!!!!!!!
+		return 1;
 	}	
     //We keep reading until we find the \0 flag
     while(charBuf!='\0'){
-        strncat(name, &charBuf,1);		
+        strncat(name, &charBuf,1);
 		readChars++;
 		// If there's not enough space
 		if(readChars >= size)
@@ -87,17 +85,17 @@ int loadstr(FILE *file, char **buf){
 		if(numberChars != 1)
 		{
 			// Error!!!!!!!!!!!!!!!!!
+			return 1;
 		}
     }
-	// SI HAY ERROR DEVOLVER -1!!!!
-	buf = (char *) malloc (sizeof (char) * size);
+	strncat(name, &charBuf,1);
     *buf = name;
     return 0;
 }
 
 /** Read tarball header and store it in memory.
  *
- * tarFile: pointer to the tarball's FILE descriptor 
+ * tarFile: pointer to the tarball's FILE descriptor
  * header: output parameter. It is used to return the starting memory address
  * of an array that contains the (name,size) pairs read from the tar file
  * nFiles: output parameter. Used to return the number of files stored in
@@ -110,7 +108,7 @@ int
 readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 {
 	int i;
-    char **buf;
+    char *buf;
     stHeaderEntry* p;
     fread(nFiles,sizeof(int),1,tarFile);
 
@@ -120,11 +118,11 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
         fclose(tarFile);
         return(EXIT_FAILURE);
     }
-	
+
     for (i = 0; i< *nFiles; i++){
-        loadstr(tarFile, buf);
+        loadstr(tarFile, &buf);
         p[i].name = (char*) malloc(sizeof (char) * strlen(buf)+1);
-        p[i].name=&buf;
+        p[i].name=buf;
         fread(&p[i].size,sizeof(unsigned int),1,tarFile);
     }
 
