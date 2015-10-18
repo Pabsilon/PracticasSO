@@ -67,7 +67,6 @@ int loadstr(FILE *file, char **buf){
     numberChars = fread(&charBuf, sizeof(char), 1, file);
 	if(numberChars != 1)
 	{
-		// Error!!!!!!!!!
 		return 1;
 	}	
     //We keep reading until we find the \0 flag
@@ -84,7 +83,6 @@ int loadstr(FILE *file, char **buf){
         numberChars = fread(&charBuf, sizeof(char), 1, file);
 		if(numberChars != 1)
 		{
-			// Error!!!!!!!!!!!!!!!!!
 			return 1;
 		}
     }
