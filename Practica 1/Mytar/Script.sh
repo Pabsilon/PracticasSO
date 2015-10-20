@@ -19,7 +19,7 @@ echo "Hello World!" > ./tmp/file1.txt
 
 head /etc/passwd > ./tmp/file2.txt 
 
-head -c 1024 /dev/random > ./tmp/file3.dat
+head -c 1024 /dev/urandom > ./tmp/file3.dat
 
 cd ./tmp
 ../mytar -cf filetar.mtar file1.txt file2.txt file3.dat
