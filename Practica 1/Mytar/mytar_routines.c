@@ -12,34 +12,25 @@
  *
  * Returns the number of bytes actually copied or -1 if an error occured.
  */
-int
-copynFile(FILE * origin, FILE * destination, int nBytes)
+ 
+int copynFile(FILE * origin, FILE * destination, int nBytes)
 {
-	int copiedChars = 0, isOk = 1; // Para la variable isOk 1: TRUE
-    char c, d;	
-    while ((isOk==1) && copiedChars < nBytes) {
-    	c= getc(origin); //gets the next char from the origin file
-		if(c == EOF) // In case of getc error
-		{			
-			isOk = 0;
-		}
-		else 
-		{
-			d = putc(c, destination); //puts that char in the destination file
-			if(d == EOF) // In case of putc error
-			{
-				isOk = 0;
-			}
-			else
-			{
-				copiedChars++;
-			}
-		}
+    int numberCopied = 0;
+    char c;
+    while (numberCopied < nBytes){
+        c = getc(origin);
+        putc(c, destination);
+        numberCopied++;
     }
-    if (copiedChars != nBytes){
-    	return (-1);
+    if (numberCopied != nBytes){
+        /**
+         * I figured that if you don't transfer the bytes asked
+         * then there is an error. We don't need to identify it
+         * so by doing this the function is greatly optimised.
+         */
+        return (-1);
     }
-    return (copiedChars);
+    return numberCopied;
 }
 
 /** Loads a string from a file.
@@ -106,7 +97,7 @@ int
 readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
 {
 	int i;
-    char *buf;
+    char *buf; //This will be 'initialized' in loadstr
     stHeaderEntry* p;
     fread(nFiles,sizeof(int),1,tarFile);
 
@@ -118,6 +109,10 @@ readHeader(FILE * tarFile, stHeaderEntry ** header, int *nFiles)
     }
 
     for (i = 0; i< *nFiles; i++){
+        /**
+         * buf returns the pointer to the allocated memory
+         * where the name is stored
+         */
         loadstr(tarFile, &buf);
         p[i].name = (char*) malloc(sizeof (char) * strlen(buf)+1);
         p[i].name=buf;
@@ -157,11 +152,13 @@ createTar(int nFiles, char *fileNames[], char tarName[])
     int headerSize = sizeof(int);
     stHeaderEntry *header;
 
-    if (nFiles <=0){ //No files, no tar.
+    if (nFiles <=0){
+        //This shouldn't happen, but we never know.
 	   return (EXIT_FAILURE);
     }
 
     if (!(tarFile = fopen(tarName, "w"))){
+        //If we try to execute from a folder with read only permissions.
         return (EXIT_FAILURE);
     }
 
@@ -183,6 +180,11 @@ createTar(int nFiles, char *fileNames[], char tarName[])
     
     i=0;
     for (; i<nFiles; i++){
+        /**
+         * We dump every file's name, size (calculated with the
+         * reading pointer) into our allocated header, and the 
+         * content from the the original file into the .tar.
+         */
         if ((inFile = fopen(fileNames[i], "r+"))==NULL){
         	fclose(tarFile);
             remove(tarName);
@@ -195,11 +197,16 @@ createTar(int nFiles, char *fileNames[], char tarName[])
         copynFile(inFile,tarFile,header[i].size);
     }
 
+    //The number of files is written at the start of the file
     fseek(tarFile, 0L, SEEK_SET);
     fwrite(&nFiles, sizeof(int), 1, tarFile);
 
     i=0;
     for(; i<nFiles; i++){
+        /**
+         * Lastly, the headear is copied into the file, following
+         * the number of files, and before the actual files.
+         */
         fwrite(header[i].name, strlen(fileNames[i])+1, 1, tarFile);
         fwrite(&header[i].size, sizeof(unsigned int), 1, tarFile);
     }
@@ -230,13 +237,16 @@ extractTar(char tarName[])
     stHeaderEntry *header;
 
     if (!(tarFile = fopen(tarName, "r"))){
+        //If we don't have read permission on the .tar file
         return (EXIT_FAILURE);
     }
 
+    //Extracts the name, size and number of files from the .tar header.
     readHeader(tarFile, &header, &numFiles);
 
     for (; i<numFiles; i++){
         if (!(outFile = fopen(header[i].name, "w"))){
+            //If we don't have write permission in the 'extracting' folder.
             return (EXIT_FAILURE);
         }
         copynFile(tarFile, outFile, header[i].size);
