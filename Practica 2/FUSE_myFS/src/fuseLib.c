@@ -469,6 +469,29 @@ static int my_truncate(const char *path, off_t size) {
 	return 0;
 }
 
+static int my_unlink(const char *path){
+    int idxNodoI;
+    
+    fprintf(stderr, "--->>>my_unlink: path %s", path);
+    
+    if ( (idxNodoI = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
+        return -ENOENT;
+    }
+    myFileSystem.nodes[idxNodoI]->freeNode = true;
+    myFileSystem.nodes[idxNodoI]->numBlocks = 0;
+    myFileSystem.nodes[idxNodoI]->fileSize = 0;
+    myFileSystem.nodes[idxNodoI]->modificationTime =  time(NULL);
+    
+    updateDirectory(&myFileSystem);
+    updateNode(&myFileSystem, idxNodoI, myFileSystem.nodes[idxNodoI]);
+    sync();
+    return 0;
+    
+}
+
+static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+    
+}
 
 struct fuse_operations myFS_operations = {
 	.getattr	= my_getattr,					// Obtain attributes from a file
@@ -476,7 +499,9 @@ struct fuse_operations myFS_operations = {
 	.truncate	= my_truncate,					// Modify the size of a file
 	.open		= my_open,						// Oeen a file
 	.write		= my_write,						// Write data into a file already opened
+        .unlink         = my_unlink,                                    // Deletes a file
 	.release	= my_release,					// Close an opened file
+        .read           = my_read,
 	.mknod		= my_mknod,						// Create a new file
 };
 
