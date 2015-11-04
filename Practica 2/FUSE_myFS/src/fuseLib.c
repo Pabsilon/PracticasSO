@@ -477,7 +477,13 @@ static int my_unlink(const char *path){
     if ( (idxNodoI = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
         return -ENOENT;
     }
+
+    resizeNode(idxNodoI, 0);
+
+    myFileSystem.directory.numFiles--;
     myFileSystem.nodes[idxNodoI]->freeNode = true;
+    myFileSystem.numFreeNodes++;
+    myFileSystem.directory.files[idxNodoI].freeFile= true;
     myFileSystem.nodes[idxNodoI]->numBlocks = 0;
     myFileSystem.nodes[idxNodoI]->fileSize = 0;
     myFileSystem.nodes[idxNodoI]->modificationTime =  time(NULL);
