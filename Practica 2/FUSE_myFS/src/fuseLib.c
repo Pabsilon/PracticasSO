@@ -480,14 +480,16 @@ static int my_unlink(const char *path){
 
     resizeNode(idxNodoI, 0);
 
-    myFileSystem.directory.numFiles--;
-    myFileSystem.nodes[idxNodoI]->freeNode = true;
-    myFileSystem.numFreeNodes++;
     myFileSystem.directory.files[idxNodoI].freeFile= true;
+    myFileSystem.directory.numFiles--;
+    myFileSystem.numFreeNodes++;
+    myFileSystem.nodes[idxNodoI]->freeNode = true;
     myFileSystem.nodes[idxNodoI]->numBlocks = 0;
     myFileSystem.nodes[idxNodoI]->fileSize = 0;
     myFileSystem.nodes[idxNodoI]->modificationTime =  time(NULL);
     
+    free(myFileSystem.nodes[idxNodoI]);
+    myFileSystem.nodes[idxNodoI] = NULL;
     updateDirectory(&myFileSystem);
     updateNode(&myFileSystem, idxNodoI, myFileSystem.nodes[idxNodoI]);
     sync();
@@ -533,9 +535,9 @@ struct fuse_operations myFS_operations = {
 	.truncate	= my_truncate,					// Modify the size of a file
 	.open		= my_open,						// Oeen a file
 	.write		= my_write,						// Write data into a file already opened
-        .unlink         = my_unlink,                                    // Deletes a file
+    .unlink         = my_unlink,                                    // Deletes a file
 	.release	= my_release,					// Close an opened file
-        .read           = my_read,
+    .read           = my_read,
 	.mknod		= my_mknod,						// Create a new file
 };
 
