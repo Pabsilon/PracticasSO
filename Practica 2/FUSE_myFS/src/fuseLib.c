@@ -496,7 +496,35 @@ static int my_unlink(const char *path){
 }
 
 static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
+    char buffer[BLOCK_SIZE_BYTES];
+    int bytes2Read = size;
+    NodeStruct *Inode = myFileSystem.nodes[fi->fh];
+
+    fprintf(stderr, "--->>>my_read: path %s, size %zu, offset %jd, fh %"PRIu64"\n", path, size, (intmax_t)offset, fi->fh);
+
     
+    while(bytes2Read){
+    	int currentBlock;
+    	currentBlock = Inode->blocks[offset / BLOCK_SIZE_BYTES];
+    	//offBlock = offset % BLOCK_SIZE_BYTES;
+
+    	ssize_t sizeRead;
+    	if ((lseek(myFileSystem.fdVirtualDisk, currentBlock * BLOCK_SIZE_BYTES, SEEK_SET)== (off_t)-1)){
+    		perror("Lseek error in my_read");
+    		return-EIO;
+    	}else{
+    		sizeRead = read(myFileSystem.fdVirtualDisk, &buffer, BLOCK_SIZE_BYTES);
+    		if (sizeRead==-1){
+    			perror("Read error in my_read");
+    			return -EIO;
+    		}
+    	}
+    	strcat(buf, buffer);
+    	bytes2Read-=(int)sizeRead;
+    	offset+=(int)sizeRead;
+    }
+
+    return size;
 }
 
 struct fuse_operations myFS_operations = {

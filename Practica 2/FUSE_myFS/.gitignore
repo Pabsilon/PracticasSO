@@ -1,3 +1,4 @@
 *.cproject
 *.project
 /fs-fuse
+virtual-disk
