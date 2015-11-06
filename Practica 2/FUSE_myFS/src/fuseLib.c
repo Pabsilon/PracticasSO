@@ -470,28 +470,34 @@ static int my_truncate(const char *path, off_t size) {
 }
 
 static int my_unlink(const char *path){
-    int idxNodoI;
-    
+    int idxNodoI, idxFile;
     fprintf(stderr, "--->>>my_unlink: path %s", path);
     
-    if ( (idxNodoI = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
+    if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
         return -ENOENT;
+    }
+    idxNodoI = myFileSystem.directory.files[idxFile].nodeIdx;
+    NodeStruct *node = (NodeStruct*) malloc (sizeof (NodeStruct));
+    readNode(&myFileSystem, idxNodoI, node);
+
+    BIT bit;
+    int i;
+    for (i =0; i<node->numBlocks; i++){
+    	bit = node->blocks[i];
+    	node->blocks[i]=0;
+    	myFileSystem.bitMap[bit]=0;
     }
 
     resizeNode(idxNodoI, 0);
 
-    myFileSystem.directory.files[idxNodoI].freeFile= true;
+    myFileSystem.directory.files[idxFile].freeFile= true;
     myFileSystem.directory.numFiles--;
     myFileSystem.numFreeNodes++;
-    myFileSystem.nodes[idxNodoI]->freeNode = true;
-    myFileSystem.nodes[idxNodoI]->numBlocks = 0;
-    myFileSystem.nodes[idxNodoI]->fileSize = 0;
-    myFileSystem.nodes[idxNodoI]->modificationTime =  time(NULL);
+    node->freeNode = true;
     
-    free(myFileSystem.nodes[idxNodoI]);
-    myFileSystem.nodes[idxNodoI] = NULL;
+    updateBitmap(&myFileSystem);
     updateDirectory(&myFileSystem);
-    updateNode(&myFileSystem, idxNodoI, myFileSystem.nodes[idxNodoI]);
+    updateNode(&myFileSystem, idxNodoI, node);
     sync();
     return 0;
     
