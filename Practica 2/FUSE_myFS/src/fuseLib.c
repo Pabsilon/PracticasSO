@@ -506,8 +506,9 @@ static int my_unlink(const char *path){
 
 static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
     char buffer[BLOCK_SIZE_BYTES];
-    int bytes2Read, totalRead = 0;
+    int bytes2Read, block2Read,totalRead = 0;
     int idxFile, idxNode;
+    int byteRead;
 
     //Look for the file.
     if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
@@ -517,7 +518,7 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     //Get the node corresponding to the file.
     idxNode = myFileSystem.directory.files[idxFile].nodeIdx;
     NodeStruct *node = (NodeStruct*) malloc (sizeof (NodeStruct));
-    readNode(&myFileSystem, idxNodoI, node);
+    readNode(&myFileSystem, idxNode, node);
 
     //If fileSize is smaller than the read size
     if (node->fileSize < size){
@@ -532,12 +533,18 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     }
 
     while (totalRead < bytes2Read){
-    	int i, currentBlock, offBlock;
+    	int currentBlock, offBlock;
     	block2Read = BLOCK_SIZE_BYTES % offset;
     	currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
-    	offBlock = ;
+    	offBlock = offset;
+    	lseek(myFileSystem.fdVirtualDisk, (currentBlock * BLOCK_SIZE_BYTES) + offset,  SEEK_SET);
+    	if ((byteRead= read (myFileSystem.fdVirtualDisk, buffer, 1))==-1){
+    		return -ENOENT;
+    	}
+    	totalRead += 1;
+    	strcat(buffer,byteRead);
     }
-
+return totalRead;
 }
 
 struct fuse_operations myFS_operations = {
