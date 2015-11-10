@@ -498,6 +498,7 @@ static int my_unlink(const char *path){
     updateBitmap(&myFileSystem);
     updateDirectory(&myFileSystem);
     updateNode(&myFileSystem, idxNodoI, node);
+    free(node);
     sync();
     return 0;
     
@@ -505,34 +506,38 @@ static int my_unlink(const char *path){
 
 static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
     char buffer[BLOCK_SIZE_BYTES];
-    int bytes2Read = size;
-    NodeStruct *Inode = myFileSystem.nodes[fi->fh];
+    int bytes2Read, totalRead = 0;
+    int idxFile, idxNode;
 
-    fprintf(stderr, "--->>>my_read: path %s, size %zu, offset %jd, fh %"PRIu64"\n", path, size, (intmax_t)offset, fi->fh);
-
+    //Look for the file.
+    if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
+            return -ENOENT;
+        }
     
-    while(bytes2Read){
-    	int currentBlock;
-    	currentBlock = Inode->blocks[offset / BLOCK_SIZE_BYTES];
-    	//offBlock = offset % BLOCK_SIZE_BYTES;
+    //Get the node corresponding to the file.
+    idxNode = myFileSystem.directory.files[idxFile].nodeIdx;
+    NodeStruct *node = (NodeStruct*) malloc (sizeof (NodeStruct));
+    readNode(&myFileSystem, idxNodoI, node);
 
-    	ssize_t sizeRead;
-    	if ((lseek(myFileSystem.fdVirtualDisk, currentBlock * BLOCK_SIZE_BYTES, SEEK_SET)== (off_t)-1)){
-    		perror("Lseek error in my_read");
-    		return-EIO;
-    	}else{
-    		sizeRead = read(myFileSystem.fdVirtualDisk, &buffer, BLOCK_SIZE_BYTES);
-    		if (sizeRead==-1){
-    			perror("Read error in my_read");
-    			return -EIO;
-    		}
-    	}
-    	strcat(buf, buffer);
-    	bytes2Read-=(int)sizeRead;
-    	offset+=(int)sizeRead;
+    //If fileSize is smaller than the read size
+    if (node->fileSize < size){
+    	bytes2Read = node->fileSize - offset;
+    }else{
+    	//Otherwise we read as much as needed
+    	bytes2Read = size;
+    }
+    //If we have no bytes to read
+    if (bytes2Read <=0){
+    	return -ENOENT;
     }
 
-    return size;
+    while (totalRead < bytes2Read){
+    	int i, currentBlock, offBlock;
+    	block2Read = BLOCK_SIZE_BYTES % offset;
+    	currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
+    	offBlock = ;
+    }
+
 }
 
 struct fuse_operations myFS_operations = {
