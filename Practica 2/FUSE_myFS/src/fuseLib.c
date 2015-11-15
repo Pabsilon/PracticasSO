@@ -505,10 +505,9 @@ static int my_unlink(const char *path){
 }
 
 static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
-    char buffer[BLOCK_SIZE_BYTES];
     int bytes2Read, block2Read,totalRead = 0;
     int idxFile, idxNode;
-    int byteRead;
+    int sizeRead, sizeLeft;
 
     //Look for the file.
     if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
@@ -521,8 +520,12 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     readNode(&myFileSystem, idxNode, node);
 
     //If fileSize is smaller than the read size
-    if (node->fileSize < size){
+    if (node->fileSize - offset < size){		
     	bytes2Read = node->fileSize - offset;
+		// If offset is bigger than size, bytes2Read will be negative
+		if(bytes2Read < 0){
+			bytes2Read = 0;
+		}
     }else{
     	//Otherwise we read as much as needed
     	bytes2Read = size;
@@ -534,17 +537,24 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
 
     while (totalRead < bytes2Read){
     	int currentBlock, offBlock;
-    	block2Read = BLOCK_SIZE_BYTES % offset;
+		block2Read = (offset + totalRead) / BLOCK_SIZE_BYTES;
     	currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
-    	offBlock = offset;
-    	lseek(myFileSystem.fdVirtualDisk, (currentBlock * BLOCK_SIZE_BYTES) + offset,  SEEK_SET);
-    	if ((byteRead= read (myFileSystem.fdVirtualDisk, buffer, 1))==-1){
+		offBlock = (offset + totalRead) % BLOCK_SIZE_BYTES;
+    	lseek(myFileSystem.fdVirtualDisk, (currentBlock * BLOCK_SIZE_BYTES) + offBlock, SEEK_SET);
+    	if ((sizeRead = read(myFileSystem.fdVirtualDisk, buf, 1)) == -1){
     		return -ENOENT;
     	}
-    	totalRead += 1;
-    	strcat(buffer,byteRead);
+		if (sizeRead > 0) {
+			buf += sizeRead;
+			totalRead += sizeRead;
+		}
     }
-return totalRead;
+	sizeLeft = size - totalRead;
+	for(int i = 0; i < sizeLeft; i++){
+		*buf = '\0';
+		buf++;
+	}
+	return totalRead;
 }
 
 struct fuse_operations myFS_operations = {
