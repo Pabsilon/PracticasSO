@@ -508,6 +508,8 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     int bytes2Read, block2Read,totalRead = 0;
     int idxFile, idxNode;
     int sizeRead, sizeLeft;
+    int i;
+    fprintf(stderr, "--->>>my_read: path %s", path);
 
     //Look for the file.
     if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
@@ -550,7 +552,7 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
 		}
     }
 	sizeLeft = size - totalRead;
-	for(int i = 0; i < sizeLeft; i++){
+	for(i = 0; i < sizeLeft; i++){
 		*buf = '\0';
 		buf++;
 	}
