@@ -12,14 +12,17 @@ echo "Creating /temp..."
 mkdir temp
 
 
-echo "Copying fuseLib.c and myFS.h to /temp and /mount-point..."
+echo "Copying fuseLib.c to /temp..."
 cp fuseLib.c temp/fuseLib.c
+echo "Copying fuseLib.c to /mount-point..."
 cp fuseLib.c mount-point/fuseLib.c
+echo "Copying myFS.h to /temp..."
 cp myFS.h temp/myFS.h
+echo "Copying myFS.h to /mount-point..."
 cp myFS.h mount-point/myFS.h
 
 echo "Checking Virtual Disk..."
-./fsck virtual-disk
+./my-fsck-static-64 virtual-disk
 
 if diff temp/fuseLib.c mount-point/fuseLib.c
 then
@@ -44,7 +47,7 @@ truncate -s -1 -o temp/myFS.h
 truncate -s -1 -o mount-point/myFS.h
 
 echo "Checking Virtual Disk..."
-./fsck virtual-disk
+./my-fsck-static-64 virtual-disk
 
 if diff temp/fuseLib.c mount-point/fuseLib.c
 then
@@ -66,7 +69,7 @@ echo "Copying Makefile into /mount-point..."
 cp Makefile mount-point/Makefile
 
 echo "Checking Virtual Disk..."
-./fsck virtual-disk
+./my-fsck-static-64 virtual-disk
 
 if diff Makefile mount-point/Makefile
 then
@@ -81,8 +84,9 @@ truncate -s +1 -o temp/myFS.h
 truncate -s +1 -o mount-point/myFS.h
 
 echo "Checking virtual disk..."
-./fsck virtual-disk
+./my-fsck-static-64 virtual-disk
 
+echo "Comparing temp/myFS.h and mount-point/myFS.h..."
 if diff temp/myFS.h mount-point/myFS.h
 then
 	true
@@ -91,4 +95,5 @@ else
 	exit 1
 fi
 
+echo " "
 echo "Everything OK!"
