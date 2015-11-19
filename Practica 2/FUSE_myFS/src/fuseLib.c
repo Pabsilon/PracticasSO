@@ -468,18 +468,26 @@ static int my_truncate(const char *path, off_t size) {
 
 	return 0;
 }
-
+/**
+ * @brief Deletes a file from the filesystem
+ *
+ * @param path file path
+ * @return 0 on success and <0 on error
+ */
 static int my_unlink(const char *path){
     int idxNodoI, idxFile;
     fprintf(stderr, "--->>>my_unlink: path %s", path);
     
+    //We look for the file
     if ( (idxFile = findFileByName( &myFileSystem, (char*)path+1)) == -1 ){
         return -ENOENT;
     }
+    //We look for the corresponding Inode
     idxNodoI = myFileSystem.directory.files[idxFile].nodeIdx;
     NodeStruct *node = (NodeStruct*) malloc (sizeof (NodeStruct));
     readNode(&myFileSystem, idxNodoI, node);
 
+    //We clean the bitmap
     BIT bit;
     int i;
     for (i =0; i<node->numBlocks; i++){
@@ -488,13 +496,16 @@ static int my_unlink(const char *path){
     	myFileSystem.bitMap[bit]=0;
     }
 
+    //We resize the node to 0
     resizeNode(idxNodoI, 0);
 
+    //We update directory and filesystem information
     myFileSystem.directory.files[idxFile].freeFile= true;
     myFileSystem.directory.numFiles--;
     myFileSystem.numFreeNodes++;
     node->freeNode = true;
     
+    //We 'commit' the changes.
     updateBitmap(&myFileSystem);
     updateDirectory(&myFileSystem);
     updateNode(&myFileSystem, idxNodoI, node);
@@ -503,7 +514,15 @@ static int my_unlink(const char *path){
     return 0;
     
 }
-
+/**
+ * @brief read data from a file in our filesystem
+ *
+ * @param path file path
+ * @param size ammount to read
+ * @param offset where we want to read
+ * @param fi file info from fuse
+ * @return ammount of bytes read or <0 on error
+ */
 static int my_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi){
     int bytes2Read, block2Read,totalRead = 0;
     int idxFile, idxNode;
@@ -537,12 +556,17 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     	return -ENOENT;
     }
 
+    //While there's still bytes to read
     while (totalRead < bytes2Read){
     	int currentBlock, offBlock;
+    	//We calculate wich block has the information we're looking for
 		block2Read = (offset + totalRead) / BLOCK_SIZE_BYTES;
     	currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
+    	//We calculate the position of the information in said block
 		offBlock = (offset + totalRead) % BLOCK_SIZE_BYTES;
+		//Move the pointer to such place
     	lseek(myFileSystem.fdVirtualDisk, (currentBlock * BLOCK_SIZE_BYTES) + offBlock, SEEK_SET);
+    	//We read 1.
     	if ((sizeRead = read(myFileSystem.fdVirtualDisk, buf, 1)) == -1){
     		return -ENOENT;
     	}
@@ -551,6 +575,7 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
 			totalRead += sizeRead;
 		}
     }
+    //We concatenate the read character into the buffer
 	sizeLeft = size - totalRead;
 	for(i = 0; i < sizeLeft; i++){
 		*buf = '\0';
@@ -565,9 +590,9 @@ struct fuse_operations myFS_operations = {
 	.truncate	= my_truncate,					// Modify the size of a file
 	.open		= my_open,						// Oeen a file
 	.write		= my_write,						// Write data into a file already opened
-    .unlink         = my_unlink,                                    // Deletes a file
+    .unlink		= my_unlink,					// Deletes a file
 	.release	= my_release,					// Close an opened file
-    .read           = my_read,
+    .read		= my_read,						// Reads a file
 	.mknod		= my_mknod,						// Create a new file
 };
 
