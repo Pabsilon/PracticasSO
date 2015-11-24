@@ -17,6 +17,9 @@
 #define MAX_BLOCKS_PER_FILE 100
 #define MAX_FILES_PER_DIRECTORY 100
 #define MAX_LEN_FILE_NAME 15
+
+#define NDIRECTOS 1
+
 #define DISK_LBA int
 #define BOOLEAN int
 
@@ -37,11 +40,16 @@ typedef struct DirectoryStructure {
 	FileStruct files[MAX_FILES_PER_DIRECTORY];	// Files
 } DirectoryStruct;
 
+typedef struct IndirectBlockStructure {
+	DISK_LBA table[BLOCK_SIZE_BYTES/sizeof(DISK_LBA) ];
+} IBlockStruct;
+
 typedef struct NodeStructure {
 	int numBlocks;                        		// Num blocks
 	int fileSize;                        		// File size
 	time_t modificationTime;              		// Modification time
-	DISK_LBA blocks[MAX_BLOCKS_PER_FILE];		// Blocks
+	DISK_LBA blocks[NDIRECTOS];		// Blocks
+	DISK_LBA indirecto;
 	BOOLEAN freeNode;                        	// If the node is available
 } NodeStruct;
 

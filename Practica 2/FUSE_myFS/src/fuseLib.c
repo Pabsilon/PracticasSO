@@ -32,7 +32,8 @@ int resizeNode(uint64_t idxNode, size_t newSize) {
 
 		/// Delete the extra conent of the last block if it exists and is not full
 		if(node->numBlocks && node->fileSize % BLOCK_SIZE_BYTES) {
-			int currentBlock = node->blocks[node->numBlocks - 1];
+			//int currentBlock = node->blocks[node->numBlocks - 1];
+			int currentBlock = getBF_of_last_BL(node);
 			if((lseek(myFileSystem.fdVirtualDisk, currentBlock * BLOCK_SIZE_BYTES, SEEK_SET) == (off_t) - 1) ||
 			        (read(myFileSystem.fdVirtualDisk, &block, BLOCK_SIZE_BYTES) == -1)) {
 				perror("Failed lseek/read in resizeNode");
@@ -321,7 +322,8 @@ static int my_write(const char *path, const char *buf, size_t size, off_t offset
 	while(bytes2Write) {
 		int i;
 		int currentBlock, offBloque;
-		currentBlock = node->blocks[offset / BLOCK_SIZE_BYTES];
+		//currentBlock = node->blocks[offset / BLOCK_SIZE_BYTES];
+		currentBlock = assignBF_to_BL(node, offset/BLOCK_SIZE_BYTES);
 		offBloque = offset % BLOCK_SIZE_BYTES;
 
 		if((lseek(myFileSystem.fdVirtualDisk, currentBlock * BLOCK_SIZE_BYTES, SEEK_SET) == (off_t) - 1) ||
@@ -423,6 +425,7 @@ static int my_mknod(const char *path, mode_t mode, dev_t device) {
 	}
 
 	// Update root folder
+
 	myFileSystem.directory.files[idxDir].freeFile = false;
 	myFileSystem.directory.numFiles++;
 	strcpy(myFileSystem.directory.files[idxDir].fileName, path + 1);
@@ -439,6 +442,7 @@ static int my_mknod(const char *path, mode_t mode, dev_t device) {
 	myFileSystem.nodes[idxNodoI]->freeNode = false;
 
 	reserveBlocksForNodes(&myFileSystem, myFileSystem.nodes[idxNodoI]->blocks, 0);
+	myFileSystem.nodes[idxNodoI]->indirecto = -1;
 
 	updateDirectory(&myFileSystem);
 	updateNode(&myFileSystem, idxNodoI, myFileSystem.nodes[idxNodoI]);
@@ -561,7 +565,8 @@ static int my_read(const char *path, char *buf, size_t size, off_t offset, struc
     	int currentBlock, offBlock;
     	//We calculate wich block has the information we're looking for
 		block2Read = (offset + totalRead) / BLOCK_SIZE_BYTES;
-    	currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
+    	//currentBlock = myFileSystem.nodes[idxNode]->blocks[block2Read];
+    	currentBlock = getBF_from_BL(myFileSystem.nodes[idxNode], block2Read);
     	//We calculate the position of the information in said block
 		offBlock = (offset + totalRead) % BLOCK_SIZE_BYTES;
 		//Move the pointer to such place
