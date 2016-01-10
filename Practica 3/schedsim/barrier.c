@@ -1,6 +1,6 @@
 #include "barrier.h"
 #include <errno.h>
-
+#include <pthread.h>
 
 #ifdef POSIX_BARRIER
 
@@ -19,6 +19,9 @@ int sys_barrier_wait(sys_barrier_t *barrier) {
 }
 
 #else
+pthread_mutex_t count_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t count_cond = PTHREAD_COND_INITIALIZER;
+int thread_count = 0;
 
 
 /* Barrier initialization function */
@@ -26,19 +29,22 @@ int sys_barrier_init(sys_barrier_t *barrier, unsigned int nr_threads)
 {
 	pthread_mutex_init(&barrier->mutex, NULL);
 	pthread_cond_init(&barrier->cond, NULL);
-	barrier->nr_threads_arrived[barrier->cur_barrier] = 0;
+	barrier->nr_threads_arrived[0] = 0;
 	barrier->max_threads = nr_threads;
+    printf("Barrier Init\n");
     return 0;
 }
 
 /* Destroy barrier resources */
 int sys_barrier_destroy(sys_barrier_t *barrier)
 {
+    printf("Threads arrived %d\n", barrier->nr_threads_arrived[0]);
 	pthread_mutex_destroy(&barrier->mutex);
 	pthread_cond_destroy(&barrier->cond);
-	barrier->nr_threads_arrived[barrier->cur_barrier] = 0;
+	barrier->nr_threads_arrived[0] = 0;
 	barrier->max_threads = 0;
-   return 0;
+    printf("Barrier Fin\n");
+    return 0;
 }
 
 /* Main synchronization operation */
@@ -56,14 +62,29 @@ int sys_barrier_wait(sys_barrier_t *barrier)
        
         ... To be completed ....  
     */
-	pthread_mutex_lock(&barrier->mutex);
-	barrier->nr_threads_arrived[barrier->cur_barrier]=barrier->nr_threads_arrived[barrier->cur_barrier]+1;
-	if (barrier->nr_threads_arrived[barrier->cur_barrier] < barrier->max_threads){
+
+    pthread_mutex_lock(&count_mutex);
+    thread_count++;
+	pthread_mutex_unlock(&count_mutex);
+
+    pthread_mutex_lock(&barrier->mutex);
+    barrier->nr_threads_arrived[0]++;
+	if (barrier->nr_threads_arrived[0] < barrier->max_threads){
 		pthread_cond_wait(&barrier->cond, &barrier->mutex);
 	}
-	barrier->nr_threads_arrived[barrier->cur_barrier]=0;
+	barrier->nr_threads_arrived[0]--;
 	pthread_cond_broadcast(&barrier->cond);
 	pthread_mutex_unlock(&barrier->mutex);
+
+    // Wait for all threads.
+    pthread_mutex_lock(&count_mutex);
+    thread_count--;
+    if(thread_count > 0) {
+        pthread_cond_wait(&count_cond, &count_mutex);
+    }
+	pthread_cond_broadcast(&count_cond);
+	pthread_mutex_unlock(&count_mutex);
+
     return 0;
 }
 
