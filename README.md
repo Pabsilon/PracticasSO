@@ -1,7 +1,7 @@
 # Practicas SO
 Curso 2015-2016
 
-Awaiting for Practica 3.
+Working on Practica 3, a c-written processor scheduler comparer.
 
 Finished Practica 2, a fuse-based FileSystem where we had to implement the unlink and read functions.
 
