@@ -1,6 +1,5 @@
 #include "barrier.h"
 #include <errno.h>
-#include <pthread.h>
 
 #ifdef POSIX_BARRIER
 
@@ -29,9 +28,8 @@ int sys_barrier_init(sys_barrier_t *barrier, unsigned int nr_threads)
 {
 	pthread_mutex_init(&barrier->mutex, NULL);
 	pthread_cond_init(&barrier->cond, NULL);
-	barrier->nr_threads_arrived[0] = 0;
+	barrier->nr_threads_arrived[barrier->cur_barrier] = 0;
 	barrier->max_threads = nr_threads;
-    printf("Barrier Init\n");
     return 0;
 }
 
@@ -41,9 +39,8 @@ int sys_barrier_destroy(sys_barrier_t *barrier)
     printf("Threads arrived %d\n", barrier->nr_threads_arrived[0]);
 	pthread_mutex_destroy(&barrier->mutex);
 	pthread_cond_destroy(&barrier->cond);
-	barrier->nr_threads_arrived[0] = 0;
+	barrier->nr_threads_arrived[barrier->cur_barrier] = 0;
 	barrier->max_threads = 0;
-    printf("Barrier Fin\n");
     return 0;
 }
 
@@ -68,11 +65,11 @@ int sys_barrier_wait(sys_barrier_t *barrier)
 	pthread_mutex_unlock(&count_mutex);
 
     pthread_mutex_lock(&barrier->mutex);
-    barrier->nr_threads_arrived[0]++;
-	if (barrier->nr_threads_arrived[0] < barrier->max_threads){
+    barrier->nr_threads_arrived[barrier->cur_barrier]++;
+	if (barrier->nr_threads_arrived[barrier->cur_barrier] < barrier->max_threads){
 		pthread_cond_wait(&barrier->cond, &barrier->mutex);
 	}
-	barrier->nr_threads_arrived[0]--;
+	barrier->nr_threads_arrived[barrier->cur_barrier]--;
 	pthread_cond_broadcast(&barrier->cond);
 	pthread_mutex_unlock(&barrier->mutex);
 
