@@ -30,3 +30,4 @@ virtual-disk
 *.exe
 *.out
 *.app
+*.pdf
