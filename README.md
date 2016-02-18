@@ -1,10 +1,18 @@
-# Practicas SO
-Curso 2015-2016
+# Operative Systems assignments
+Taught by José Ignacio Gómez
+FDI UCM
+Year 2015-2016
 
-Starting work on Practica 4, a simple keyboard driver.
+Work by Pablo Mac-Veigh and Marina Jiménez
 
-Finished Practica 3, a c-written processor scheduler comparer. Some optional parts added.
+#Practica 1
+C-written .tar tool, command based. Doesn't really follow common standards, used to get familiar with C.
 
-Finished Practica 2, a fuse-based FileSystem where we had to implement the unlink and read functions.
+#Practica 2
+Fuse-bases filesystem where we had to implement the unlink and read functions.
 
-Finished Practica 1, a c-written .tar line based tool, wich doesn't follow standards.
+#Practica 3
+C-written task scheduler comparer. Some additional options added.
+
+#Practica 4
+Simple I/O keyboard driver. Flases the led lights on the keyboard when using the mouse.
